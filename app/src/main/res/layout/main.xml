@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:orientation="vertical" android:layout_width="match_parent"
+  android:layout_height="match_parent">
+
+  <!-- Text box that shows the currently playing stream address/index-->
+  <EditText
+    android:id="@+id/stream_ID"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:backgroundTint="#80131313"
+    android:editable="false"
+    android:ems="10"
+    android:focusable="false"
+    android:focusedByDefault="false"
+    android:inputType="textPersonName"
+    android:textColor="#FFFFFF" />
+
+  <!-- Surface that LibVLC will output the video streams onto -->
+  <SurfaceView
+    android:id="@+id/video_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_gravity="center"
+    android:background="@android:color/transparent"
+    android:visibility="visible" />
+</LinearLayout>
