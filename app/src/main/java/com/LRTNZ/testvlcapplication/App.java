@@ -339,7 +339,7 @@ public class App extends Activity implements IVLCVout.Callback{
         }
         runOnUiThread(() -> changeStream());
       }
-    }, 5000, 15000);
+    }, 5000, 10000);
   }
 
 
