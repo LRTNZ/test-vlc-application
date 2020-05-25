@@ -84,8 +84,8 @@ public class App extends Activity implements IVLCVout.Callback{
   // |---------------------------|
 
   ArrayList<String> streamAddresses = new ArrayList<String>(){{
-    add("udp://@238.1.1.1:1234");
-    add("udp://@238.1.1.2:1234");
+    add("udp://@239.2.2.2:1234");
+    add("udp://@239.1.1.1:1234");
   }};
 
 
