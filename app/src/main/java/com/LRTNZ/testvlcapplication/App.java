@@ -172,13 +172,13 @@ public class App extends Activity implements IVLCVout.Callback{
           Timber.d("onEvent: EncounteredError");
           break;
         case MediaPlayer.Event.EndReached:
-          Timber.d("onEvent: EndReached");
+          //Timber.d("onEvent: EndReached");
           break;
         case MediaPlayer.Event.ESAdded:
-          Timber.d("onEvent: ESAdded");
+         // Timber.d("onEvent: ESAdded");
           break;
         case MediaPlayer.Event.ESDeleted:
-          Timber.d("onEvent: ESDeleted");
+         // Timber.d("onEvent: ESDeleted");
           break;
         case MediaPlayer.Event.MediaChanged:
           Timber.d("onEvent: MediaChanged");
@@ -188,10 +188,10 @@ public class App extends Activity implements IVLCVout.Callback{
           Timber.d("onEvent: Opening");
           break;
         case MediaPlayer.Event.PausableChanged:
-          Timber.d("onEvent: PausableChanged");
+         // Timber.d("onEvent: PausableChanged");
           break;
         case MediaPlayer.Event.Paused:
-          Timber.d("onEvent: Paused");
+        //  Timber.d("onEvent: Paused");
           break;
         case MediaPlayer.Event.Playing:
           Timber.d("onEvent: Playing");
@@ -200,7 +200,7 @@ public class App extends Activity implements IVLCVout.Callback{
           //  Timber.d("onEvent: PositionChanged");
           break;
         case MediaPlayer.Event.SeekableChanged:
-          Timber.d("onEvent: SeekableChanged");
+         // Timber.d("onEvent: SeekableChanged");
           break;
         case MediaPlayer.Event.Stopped:
           Timber.d("onEvent: Stopped");
@@ -209,7 +209,7 @@ public class App extends Activity implements IVLCVout.Callback{
           //  Timber.d("onEvent: TimeChanged");
           break;
         case MediaPlayer.Event.Vout:
-          Timber.d("onEvent: Vout");
+         // Timber.d("onEvent: Vout");
           break;
       }
     });
