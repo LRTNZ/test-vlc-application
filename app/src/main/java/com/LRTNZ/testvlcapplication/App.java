@@ -11,6 +11,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.EditText;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Timer;
@@ -88,6 +89,15 @@ public class App extends Activity implements IVLCVout.Callback{
     add("udp://@239.1.1.1:1234");
   }};
 
+  ArrayList<String> videoFiles = new ArrayList<String>(){{
+    add("resort_flyover.mp4");
+    add("waves_crashing.mp4");
+  }};
+
+
+  static boolean streamOrFile = true;
+
+  static int numPlaybacks = 0;
 
   @Override
   protected void onCreate(Bundle savedInstance){
@@ -123,6 +133,10 @@ public class App extends Activity implements IVLCVout.Callback{
 
     addArg("fullscreen", "--fullscreen");
     addArg("verbose", "-vvv");
+
+  //  addArg("deinterlace", "--deinterlace=1");
+    //addArg("mode","--deinterlace-mode=yadif");
+   // addArg("filter","--video-filter=deinterlace");
 
     // Load the editText variable with a reference to what it needs to fill in the layout
     streamName = findViewById(R.id.stream_ID);
@@ -217,7 +231,6 @@ public class App extends Activity implements IVLCVout.Callback{
     // Call the change stream, to preload the first stream at startup, instead of waiting for an input
     changeStream();
 
-
     // If you do not have the means to automatically generate an alternative two pulse up/two pulse down signal input for the Android TV,
     // these two lines can be uncommented in order to enable the automatic up/down changing.
     // The reason there are the two input options, is to prove it is not the source of the call to changing the stream that is causing the issues with the crashing.
@@ -226,10 +239,8 @@ public class App extends Activity implements IVLCVout.Callback{
     // | Optional automatic stream changing |
     // |------------------------------------|
 
-    //  runAutomaticTimer = true;
-    //  runTimedStreamChange();
-
-
+     runAutomaticTimer = true;
+     runTimedStreamChange();
   }
 
 
@@ -281,12 +292,6 @@ public class App extends Activity implements IVLCVout.Callback{
     // Attach the video views passed to the output
     vlcOut.attachViews();
 
-    // Debug
-    Timber.d("App ran started");
-  }
-
-  public void releasePlayer() {
-    mediaPlayer.stop();
   }
 
   @Override
@@ -307,11 +312,132 @@ public class App extends Activity implements IVLCVout.Callback{
 
     // Release the various VLC things when the activity is stopped
     mediaPlayer.stop();
+    runAutomaticTimer = false;
     mediaPlayer.getVLCVout().detachViews();
     mediaPlayer.getVLCVout().removeCallback(this);
 
     Timber.d("Player ran stop");
   }
+
+
+  /**
+   * {@link Boolean} value that stores whether or not the automatic timer should cancel, once it has been set going
+   */
+  volatile boolean runAutomaticTimer = false;
+
+  /**
+   * Method that can be called to start a timer to automatically change the stream every 10 seconds from inside the application.
+   */
+  void runTimedStreamChange(){
+
+    Timer timer = new Timer();
+    timer.scheduleAtFixedRate(new TimerTask() {
+      @Override
+      public void run() {
+        if(!runAutomaticTimer){
+          this.cancel();
+        }
+        runOnUiThread(() -> changeStream());
+      }
+    }, 5000, 15000);
+  }
+
+
+  /**
+   * Method that is called to change the multicast stream VLC is currently playing
+   */
+  void changeStream(){
+
+    // If the current stream being played is the first
+    if(currentStreamIndex == 0){
+
+      currentStreamIndex = 1;
+
+      if(streamOrFile){
+        Timber.d("Selected Stream: 1");
+        currentStreamAddress = streamAddresses.get(1);
+
+      } else {
+        Timber.d("Selected Video: 1 - %s", videoFiles.get(1));
+        currentStreamAddress = videoFiles.get(1);
+      }
+
+      // Perform the inverse if the second stream is currently playing
+    } else {
+
+      currentStreamIndex = 0;
+
+      if(streamOrFile){
+        Timber.d("Selected Stream: 0");
+        currentStreamAddress = streamAddresses.get(0);
+
+      } else {
+        Timber.d("Selected Video: 0 - %s", videoFiles.get(0));
+        currentStreamAddress = videoFiles.get(0);
+      }
+    }
+
+    // Load the values of the current stream and index into the textbox at the top of the screen, to make it easier to see what is happening
+    streamName.setText(String.format("Stream: %s/%s", currentStreamIndex,currentStreamAddress));
+
+    // If the current media source is not null, as it would be at start up, release it.
+    if (mediaSource != null) {
+      mediaSource.release();
+    }
+
+    if(streamOrFile){
+      mediaSource = new Media(this.libVLC, Uri.parse(this.currentStreamAddress));
+    } else {
+      try {
+        mediaSource = new Media(this.libVLC, getAssets().openFd(this.currentStreamAddress));
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+    //mediaSource.setHWDecoderEnabled(true, true);
+
+    // Finish up the process of loading the stream into the player
+    finishPlayer();
+  }
+
+  /**
+   * Method that is called to load in a new mediasource and to set it playing out the output, from VLC
+   */
+  void finishPlayer(){
+
+    if(mediaPlayer.isPlaying()){
+      mediaPlayer.stop();
+    }
+
+    // Add the option to be in fullscreen to the new mediasource
+    mediaSource.addOption(":fullscreen");
+
+   // mediaPlayer.
+    // Set the player to use the provided media source
+    mediaPlayer.setMedia(mediaSource);
+
+    // Release the media source
+    mediaSource.release();
+
+    // Start the media player
+    mediaPlayer.play();
+
+    Timber.d("Number of playbacks: %s", numPlaybacks);
+    numPlaybacks ++;
+  }
+
+  // Required handler things for the vlcOut interface
+
+  @Override
+  public void onSurfacesCreated(IVLCVout ivlcVout) {
+
+  }
+
+  @Override
+  public void onSurfacesDestroyed(IVLCVout ivlcVout) {
+
+  }
+
 
 
   /**
@@ -424,91 +550,5 @@ public class App extends Activity implements IVLCVout.Callback{
   }
 
 
-  /**
-   * {@link Boolean} value that stores whether or not the automatic timer should cancel, once it has been set going
-   */
-  volatile boolean runAutomaticTimer = false;
 
-  /**
-   * Method that can be called to start a timer to automatically change the stream every 10 seconds from inside the application.
-   */
-  void runTimedStreamChange(){
-
-    Timer timer = new Timer();
-    timer.scheduleAtFixedRate(new TimerTask() {
-      @Override
-      public void run() {
-        if(!runAutomaticTimer){
-          this.cancel();
-        }
-        runOnUiThread(() -> changeStream());
-      }
-    }, 5000, 10000);
-  }
-
-
-  /**
-   * Method that is called to change the multicast stream VLC is currently playing
-   */
-  void changeStream(){
-
-    // If the current stream being played is the first
-    if(currentStreamIndex == 0){
-
-      // Change the stream to the second stream, and get it's values
-      Timber.d("Selected Stream: 1");
-      currentStreamIndex = 1;
-      currentStreamAddress = streamAddresses.get(1);
-
-      // Perform the inverse if the second stream is currently playing
-    } else {
-      Timber.d("Selected Stream: 0");
-      currentStreamIndex = 0;
-      currentStreamAddress = streamAddresses.get(0);
-    }
-
-    // Load the values of the current stream and index into the textbox at the top of the screen, to make it easier to see what is happening
-    streamName.setText(String.format("Stream: %s/%s", currentStreamIndex,currentStreamAddress));
-
-    // If the current media source is not null, as it would be at start up, release it.
-    if (mediaSource != null) {
-      mediaSource.release();
-    }
-
-    // Create a new media source from the stream address of the stream that has been selected to be played
-    mediaSource = new Media(this.libVLC, Uri.parse(this.currentStreamAddress));
-
-    // Finish up the process of loading the stream into the player
-    finishPlayer();
-  }
-
-  /**
-   * Method that is called to load in a new mediasource and to set it playing out the output, from VLC
-   */
-  void finishPlayer(){
-
-    // Add the option to be in fullscreen to the new mediasource
-    mediaSource.addOption(":fullscreen");
-
-    // Set the player to use the provided media source
-    mediaPlayer.setMedia(mediaSource);
-
-    // Release the media source
-    mediaSource.release();
-
-    // Start the media player
-    mediaPlayer.play();
-  }
-
-  // Required handler things for the vlcOut interface
-
-  @Override
-  public void onSurfacesCreated(IVLCVout ivlcVout) {
-
-  }
-
-  @Override
-  public void onSurfacesDestroyed(IVLCVout ivlcVout) {
-
-  }
 }
